@@ -25,10 +25,19 @@ BoxHeight  = $0857
 BoxX       = $8058
 BoxY       = $8059
 
+chrset     = $d018      ;register to enable custom character set 
+raster     = $d012 
+
+; Kernal Routinine Locations
+
+GETIN      = $ffe4
+
 ; ------------------------
 ; Main Loop
 ;-------------------------
 
+                sei
+                cli
 
                 lda #147        ;  Clear
                 jsr $ffd2       ;  Screen
@@ -77,16 +86,35 @@ BoxY       = $8059
 
                 ; place text
 
+                lda #$00
+                sta BoxX
+                sta BoxY
+
                 jsr write
 
-main            lda #$00
-                jsr main
+                jmp WaitForInput
 
-Exit            rts
+
 
 ; ------------------------
 ; Subroutines
 ; ------------------------
+
+WaitForInput    jsr GETIN
+                beq WaitForInput
+                and #$3f              ; offsets character set to read correctly.
+
+                sta ScrnChar          ; replace with input subroutine.
+
+                cmp #$18              ; Is character Q?
+                beq Exit
+
+                jmp WaitForInput
+
+; ------------------------
+;  Clear screen and quit
+
+Exit            jmp $fce2             ; System Reset
 
 ; ------------------------
 ; Write Text at a location
@@ -96,9 +124,9 @@ write           ldx #$00
                 ; Load Terminator Character
 
 @_write         lda header1,x
-                and #$3f        ; Converts to Uppercase
-                clc             ; Clear incoming carry
-                adc #$80        ; Flips characters.  But is always 1 higher on the first pass.
+                and #$3f              ; Converts to Uppercase
+                clc                   ; Clear incoming carry
+                adc #$80              ; Flips characters.  But is always 1 higher on the first pass.
                 sta $0429,x
 
 
@@ -114,7 +142,8 @@ write           ldx #$00
 ; ------------------------
 ; Draw a box at a location
 
-DrawBox         lda #$00                        
+DrawBox
+                lda #$00                        
                 sta @DrawBox+1                
                 lda #$04                       
                 sta @DrawBox+2
@@ -207,13 +236,15 @@ DrawBox         lda #$00
 
 @QuitBox        rts
 
+
+
 ; ------------------------
 ; Data
 ; ------------------------
         
-header1         text 'LEVEL GENERATOR '
-header2         text 'THIS IS LEVEL: '
-header3         text 'PRESS H FOR HELP '
+header1         text 'LEVEL GENERATOR ;'
+header2         text 'THIS IS LEVEL: ;'
+header3         text 'PRESS H FOR HELP ;'
 
 width           byte 40
 height          byte 5
