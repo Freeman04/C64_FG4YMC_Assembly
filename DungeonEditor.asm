@@ -22,8 +22,11 @@ FillColor  = $0855
 BoxWidth   = $0856
 BoxHeight  = $0857
 
-BoxX       = $8058
-BoxY       = $8059
+BoxX       = $0858
+BoxY       = $0859
+
+CursX      = $0860
+CursY      = $0861
 
 chrset     = $d018      ;register to enable custom character set 
 raster     = $d012 
@@ -89,12 +92,12 @@ GETIN      = $ffe4
                 lda #$00
                 sta BoxX
                 sta BoxY
+                sta CursX
+                sta CursY
 
                 jsr write
 
                 jmp WaitForInput
-
-
 
 ; ------------------------
 ; Subroutines
@@ -104,9 +107,36 @@ WaitForInput    jsr GETIN
                 beq WaitForInput
                 and #$3f              ; offsets character set to read correctly.
 
-                sta ScrnChar          ; replace with input subroutine.
+                ldx CursX
+                ldy CursY
 
-                cmp #$18              ; Is character Q?
+                sta ScrnChar          ; replace with input subroutine.
+                stx ScrnChar +2
+                sty ScrnChar +4               
+
+cmdHelp         cmp #$08                ;h
+                beq Exit                ; change this to spit out help, 
+                                        ; if we keep that.
+
+; Figure out how we're doing item placement
+
+cmdUp           cmp #$09                ;i
+                bne cmdLeft
+                inc CursY
+                
+cmdLeft         cmp #$0a                ;j
+                bne cmdDown
+                dec CursX
+
+cmdDown         cmp #$0b                ;k
+                bne cmdRight
+                dec CursY
+
+cmdRight        cmp #$0c                ;l
+                bne cmdQuit
+                inc CursX
+
+cmdQuit         cmp #$18              ; Is character x?
                 beq Exit
 
                 jmp WaitForInput
